@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tumblr Posts</title>
+</head>
+
+<body>
+    <div id="app" class="main">
+        <div class="left-column">
+            <div class="search-box">
+                <div class="tag-search">
+                    <h2>Tag:</h2>
+                    <input id="tagInput" type="text">
+                </div>
+                <div style="margin-left: 70%; margin-top: 10px;">
+                    <button id="submitButton">Submit</button>
+                </div>
+            </div>
+            <div style="height: 50px; padding: 10px 0 0 5px;">
+                <span id="errorMessage" style="font-size: 24px; color: red;"></span>
+                <span id="searchResults" style="font-size: 24px;"></span>
+            </div>
+            <div id="postsContainer" class="posts-container"></div>
+        </div>
+        <div class="right-column">
+            <div id="favoritesContainer">
+                <h2 style="margin-left: 280px;">Favorites</h2>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let apiKey = 'UVHidgwWtNYfWtfAVtfjc2g4EHwmDOjuPkPmYhaL1VqdgneZ0D';
+
+        function addToFavorites(post) {
+            let newFaves = JSON.parse(localStorage.getItem('favorites')) || [];
+            newFaves.push(post);
+            localStorage.setItem('favorites', JSON.stringify(newFaves));
+            renderFavorites();
+        }
+
+        function removeFromFavorites(id) {
+            let faves = JSON.parse(localStorage.getItem('favorites')) || [];
+            let filtered = faves.filter((post) => post.id !== id);
+            localStorage.setItem('favorites', JSON.stringify(filtered));
+            renderFavorites();
+        }
+
+        function renderFavorites() {
+            let favoritesContainer = document.getElementById('favoritesContainer');
+            favoritesContainer.innerHTML = '';
+            let favorites = JSON.parse(localStorage.getItem('favorites')) || [];
+            favorites.forEach(post => {
+                favoritesContainer.innerHTML += `<div>${post.summary}</div>`;
+            });
+        }
+
+        document.getElementById('submitButton').addEventListener('click', handleSubmit);
+
+        function handleSubmit() {
+            let tag = document.getElementById('tagInput').value;
+            let apiUrl = `https://api.tumblr.com/v2/tagged?tag=${tag}&limit=20&api_key=${apiKey}&callback=?`;
+
+            document.getElementById('searchResults').textContent = "";
+
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('searchResults').textContent = "Search results:";
+                    renderPosts(data.response);
+                })
+                .catch(error => {
+                    document.getElementById('errorMessage').textContent = `Error: ${error}`;
+                });
+        }
+
+        function renderPosts(posts) {
+            let postsContainer = document.getElementById('postsContainer');
+            postsContainer.innerHTML = '';
+            posts.forEach(post => {
+                if (post.type === 'photo') {
+                    let url = post.photos[0].alt_sizes[0].url;
+                    postsContainer.innerHTML += `<div><img src="${url}" alt="${post.summary}">${post.summary}</div>`;
+                } else if (post.type === 'chat') {
+                    let chatText = post.body.split("\n");
+                    postsContainer.innerHTML += `<div>${chatText}</div>`;
+                } // Add other post types here
+            });
+        }
+
+        // Initial render of favorites
+        renderFavorites();
+    </script>
+</body>
+
+</html>
